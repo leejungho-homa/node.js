@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 const MongoClient = require("mongodb").MongoClient; //mongodb 사용을 위한 요청
+app.set("view engine", "ejs"); //ejs intall 후에 활용하기 위한 setting
 
 var db; //db저장 활용을 위한 변수 명령
 MongoClient.connect(
@@ -10,13 +11,6 @@ MongoClient.connect(
   function (에러, client) {
     if (에러) return console.log(에러); //에러가 나오면 콘솔창 띄우기
     db = client.db("todoapp"); //todoapp 이라는 database 가져오기
-
-    db.collection("post").insertOne(
-      { 이름: "John", _id: 100 },
-      function (에러, 결과) {
-        console.log("저장완료");
-      }
-    ); //post라는 collection에서 저장하기
 
     app.listen(8080, function () {
       console.log("listening on 8080");
@@ -37,4 +31,20 @@ app.post("/add", function (req, res) {
   res.send("전송완료");
   console.log(req.body.title);
   console.log(req.body.date);
+  db.collection("post").insertOne(
+    { 제목: req.body.title, 날짜: req.body.date },
+    function (에러, 결과) {
+      console.log("저장완료");
+    }
+  );
+});
+
+//list로 get요청된 것을 db에서 가져와서 보여줌.
+app.get("/list", function (req, res) {
+  db.collection("post")
+    .find()
+    .toArray(function (에러, 결과) {
+      console.log(결과);
+      res.render("list.ejs", { posts: 결과 });
+    });
 });
