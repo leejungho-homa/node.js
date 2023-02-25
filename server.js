@@ -1,3 +1,5 @@
+//terminal --> nodemon server.js
+
 const express = require("express");
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -13,7 +15,7 @@ MongoClient.connect(
     db = client.db("todoapp"); //todoapp 이라는 database 가져오기
 
     app.listen(8080, function () {
-      console.log("listening on 8080");
+      console.log(`Server listening on port : 8080, http://localhost:8080`);
     });
   }
 );
@@ -29,12 +31,26 @@ app.get("/write", function (req, res) {
 //html 안에 form 내용 post(서버에 저장하기)
 app.post("/add", function (req, res) {
   res.send("전송완료");
-  console.log(req.body.title);
-  console.log(req.body.date);
-  db.collection("post").insertOne(
-    { 제목: req.body.title, 날짜: req.body.date },
+  db.collection("counter").findOne(
+    { name: "게시물갯수" },
     function (에러, 결과) {
-      console.log("저장완료");
+      var 총게시물갯수 = 결과.totalPost;
+      db.collection("post").insertOne(
+        { _id: 총게시물갯수 + 1, 제목: req.body.title, 날짜: req.body.date },
+        function (에러, 결과) {
+          console.log("저장완료");
+          //counter라는 콜렉션에 있는 totalPost 항목도 1 증가
+          db.collection("counter").updateOne(
+            { name: "게시물갯수" },
+            { $inc: { totalPost: 1 } }, //update operator 필수임(set은 변경,inc는 증가)
+            function (에러, 결과) {
+              if (에러) {
+                return console.log(에러);
+              }
+            }
+          );
+        }
+      );
     }
   );
 });
